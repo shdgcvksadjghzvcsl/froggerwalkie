@@ -1,408 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐸 emoji frogger · slow & simple</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-        }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: #1f3b1f;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-            padding: 12px;
-        }
-        /* ultra-flat container – no nested borders, minimal chrome */
-        .game-area {
-            background: #1f3b1f;
-            padding: 10px;
-            border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-            max-width: 680px;
-            width: 100%;
-        }
-        canvas {
-            display: block;
-            margin: 0 auto;
-            border-radius: 16px;
-            background: #2a6b2a;
-            width: 100%;
-            height: auto;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            cursor: crosshair;
-            touch-action: none;
-        }
-        /* single flat row for score + restart */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 0 4px;
-            color: #e9f5d0;
-            font-weight: bold;
-            font-size: 1.3rem;
-            text-shadow: 2px 2px 0 #0a1f0a;
-        }
-        .score {
-            background: #0d2b0d;
-            padding: 4px 18px;
-            border-radius: 40px;
-            letter-spacing: 1px;
-            box-shadow: inset 0 -2px 0 #4a7a4a;
-        }
-        .restart {
-            background: #e7b42e;
-            border: none;
-            font-size: 1.3rem;
-            padding: 4px 18px 6px;
-            border-radius: 40px;
-            font-weight: 800;
-            color: #1e2a0e;
-            box-shadow: 0 4px 0 #8f6f1a;
-            cursor: pointer;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: 0.05s linear;
-            transform: translateY(-1px);
-        }
-        .restart:active {
-            box-shadow: 0 1px 0 #8f6f1a;
-            transform: translateY(3px);
-        }
-        .hint {
-            text-align: center;
-            margin-top: 8px;
-            color: #b8d9a4;
-            font-size: 0.95rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐱 emoji catger · slow & simple</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    body { margin: 0; min-height: 100vh; background: #1f3b1f; display: flex; justify-content: center; align-items: center; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; padding: 12px; }
+    .game-area { background: #1f3b1f; padding: 10px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,.5); max-width: 680px; width: 100%; }
+    canvas { display: block; margin: 0 auto; border-radius: 16px; background: #2a6b2a; width: 100%; height: auto; box-shadow: 0 4px 10px rgba(0,0,0,.5); cursor: crosshair; touch-action: none; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 4px; color: #e9f5d0; font-weight: bold; font-size: 1.3rem; text-shadow: 2px 2px 0 #0a1f0a; }
+    .score { background: #0d2b0d; padding: 4px 18px; border-radius: 40px; letter-spacing: 1px; box-shadow: inset 0 -2px 0 #4a7a4a; }
+    .restart { background: #e7b42e; border: none; font-size: 1.3rem; padding: 4px 18px 6px; border-radius: 40px; font-weight: 800; color: #1e2a0e; box-shadow: 0 4px 0 #8f6f1a; cursor: pointer; font-family: inherit; }
+    .hint { text-align: center; margin-top: 8px; color: #b8d9a4; font-size: .95rem; font-weight: 500; letter-spacing: .5px; }
+  </style>
 </head>
 <body>
 <div class="game-area">
-    <!-- single row – no nested divs beyond this -->
-    <div class="top-bar">
-        <span class="score">🏆 <span id="scoreDisplay">0</span></span>
-        <button class="restart" id="restartButton">↻ RESTART</button>
-    </div>
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
-    <div class="hint">🐸 arrow keys / swipe · slow cars · reach 🏁</div>
+  <div class="top-bar"><span class="score">🏆 <span id="scoreDisplay">0</span></span><button class="restart" id="restartButton">↻ RESTART</button></div>
+  <canvas id="gameCanvas" width="640" height="480"></canvas>
+  <div class="hint">🐱 arrow keys / swipe · slow cars · reach 🏁</div>
 </div>
 <script>
-    (function() {
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreSpan = document.getElementById('scoreDisplay');
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const COLS = 8, ROWS = 9;
+  const CELL_W = canvas.width / COLS, CELL_H = canvas.height / ROWS;
+  let score = 0;
+  let cat = { col: 3, row: 0 };
+  let cars = [];
+  const carEmojis = ['🚗', '🚙', '🚕', '🚌', '🚚', '🚓'];
 
-        // ---------- grid ----------
-        const COLS = 8;
-        const ROWS = 9;
-        const CELL_W = canvas.width / COLS;   // 80
-        const CELL_H = canvas.height / ROWS;  // 53.333
-
-        // ---------- state ----------
-        let score = 0;
-        let frog = { col: 3, row: 0 };  // bottom row 0
-
-        // cars: smooth fractional column, slower speeds
-        let cars = [];
-
-        const carEmojis = ['🚗', '🚙', '🚕', '🚌', '🚚', '🚓'];
-
-        // ---------- initialize cars – significantly slower ----------
-        function resetCars() {
-            cars = [];
-            const roadRows = [2, 3, 4, 5, 6];
-            roadRows.forEach(row => {
-                // 2 or 3 cars per row
-                const carCount = (row % 2 === 0) ? 3 : 2;
-                // alternate direction per row
-                const dir = (row % 2 === 0) ? 1 : -1;
-                for (let i = 0; i < carCount; i++) {
-                    const col = (i * 3 + row * 2) % COLS;
-                    const emoji = carEmojis[Math.floor(Math.random() * carEmojis.length)];
-                    // *** SLOWER SPEED: 0.008 – 0.018 cells/frame ***
-                    const speed = 0.008 + Math.random() * 0.010;
-                    cars.push({
-                        fCol: col,          // fractional column for smooth movement
-                        row: row,
-                        dir: dir,
-                        emoji: emoji,
-                        speed: speed
-                    });
-                }
-            });
-        }
-
-        // ---------- reset game (score + frog + cars) ----------
-        function resetGame() {
-            frog = { col: 3, row: 0 };
-            score = 0;
-            updateScore();
-            resetCars();
-        }
-
-        function updateScore() {
-            scoreSpan.textContent = score;
-        }
-
-        // ---------- collision: frog vs any car (rounded column) ----------
-        function checkCollision() {
-            for (let car of cars) {
-                const carCol = Math.round(car.fCol);
-                // wrap column into 0..COLS-1 for fair check
-                const wrappedCol = ((carCol % COLS) + COLS) % COLS;
-                if (car.row === frog.row && wrappedCol === frog.col) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // ---------- move frog ----------
-        function moveFrog(direction) {
-            let newCol = frog.col;
-            let newRow = frog.row;
-
-            if (direction === 'up') newRow = Math.min(frog.row + 1, ROWS - 1);
-            if (direction === 'down') newRow = Math.max(frog.row - 1, 0);
-            if (direction === 'left') newCol = Math.max(frog.col - 1, 0);
-            if (direction === 'right') newCol = Math.min(frog.col + 1, COLS - 1);
-
-            if (newCol === frog.col && newRow === frog.row) return;
-
-            const oldCol = frog.col, oldRow = frog.row;
-            frog.col = newCol;
-            frog.row = newRow;
-
-            // immediate collision check after tentative move
-            if (checkCollision()) {
-                frog.col = oldCol;
-                frog.row = oldRow;
-                return;
-            }
-
-            // win condition: reach top row (row 8)
-            if (frog.row === ROWS - 1) {
-                score++;
-                updateScore();
-                // respawn frog at start
-                frog.col = 3;
-                frog.row = 0;
-                // fresh cars so no immediate unfair hit
-                resetCars();
-            }
-        }
-
-        // ---------- update car positions ----------
-        function updateCars() {
-            for (let car of cars) {
-                car.fCol += car.dir * car.speed;
-
-                // wrap around with margin
-                if (car.fCol > COLS + 0.5) {
-                    car.fCol = -1.0;
-                } else if (car.fCol < -1.0) {
-                    car.fCol = COLS + 0.5;
-                }
-            }
-        }
-
-        // ---------- collision after car movement ----------
-        function checkCollisionAfterMove() {
-            for (let car of cars) {
-                const carCol = Math.round(car.fCol);
-                const wrappedCol = ((carCol % COLS) + COLS) % COLS;
-                if (car.row === frog.row && wrappedCol === frog.col) {
-                    // hit → reset frog to start
-                    frog.col = 3;
-                    frog.row = 0;
-                    // reset cars to avoid instant repeat
-                    resetCars();
-                    break;
-                }
-            }
-        }
-
-        // ---------- draw everything (clean, no extra decorations) ----------
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // ----- background rows -----
-            for (let row = 0; row < ROWS; row++) {
-                const y = canvas.height - (row + 1) * CELL_H;
-                let fillColor = '#2e7d32';
-
-                if (row === 0) fillColor = '#4caf50';        // start grass
-                else if (row === 1) fillColor = '#388e3c';   // safe grass
-                else if (row >= 2 && row <= 6) fillColor = '#2c3e50'; // road
-                else if (row === 7) fillColor = '#388e3c';   // safe grass
-                else if (row === 8) fillColor = '#b8860b';   // goal
-
-                ctx.fillStyle = fillColor;
-                ctx.fillRect(0, y, canvas.width, CELL_H);
-
-                // road lane markings
-                if (row >= 2 && row <= 6) {
-                    ctx.fillStyle = '#f1c40f';
-                    const dashY = y + CELL_H * 0.5;
-                    for (let col = 0; col < COLS; col++) {
-                        const dashX = col * CELL_W + CELL_W * 0.25;
-                        ctx.fillRect(dashX, dashY - 2, CELL_W * 0.5, 4);
-                    }
-                }
-
-                // subtle grid lines
-                ctx.strokeStyle = '#00000022';
-                ctx.lineWidth = 1;
-                for (let col = 0; col <= COLS; col++) {
-                    ctx.beginPath();
-                    ctx.moveTo(col * CELL_W, y);
-                    ctx.lineTo(col * CELL_W, y + CELL_H);
-                    ctx.stroke();
-                }
-            }
-
-            // ----- goal row checkered pattern + flag -----
-            const goalY = canvas.height - (8 + 1) * CELL_H;
-            for (let col = 0; col < COLS; col++) {
-                ctx.fillStyle = (col % 2 === 0) ? '#f5e6b0' : '#d4af37';
-                ctx.fillRect(col * CELL_W, goalY, CELL_W, CELL_H);
-                ctx.font = `${CELL_H * 0.5}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#00000055';
-                ctx.fillText('🏁', col * CELL_W + CELL_W/2, goalY + CELL_H/2 + 2);
-                ctx.fillStyle = '#ffffffdd';
-                ctx.fillText('🏁', col * CELL_W + CELL_W/2, goalY + CELL_H/2);
-            }
-
-            // ----- draw cars (smooth position) -----
-            cars.forEach(car => {
-                let displayCol = car.fCol;
-                // wrap for drawing
-                if (displayCol > COLS) displayCol -= COLS;
-                if (displayCol < -0.5) displayCol += COLS;
-
-                const x = displayCol * CELL_W + CELL_W / 2;
-                const y = canvas.height - (car.row + 1) * CELL_H + CELL_H / 2;
-
-                // simple shadow for depth
-                ctx.shadowColor = '#00000080';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetY = 3;
-                ctx.font = `${CELL_H * 0.8}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#ffffff';
-                ctx.fillText(car.emoji, x, y);
-                // reset shadow
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetY = 0;
-            });
-
-            // ----- draw frog with soft glow -----
-            const frogX = frog.col * CELL_W + CELL_W / 2;
-            const frogY = canvas.height - (frog.row + 1) * CELL_H + CELL_H / 2;
-
-            ctx.shadowColor = '#b3ffb3';
-            ctx.shadowBlur = 16;
-            ctx.font = `${CELL_H * 0.9}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🐸', frogX, frogY);
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-        }
-
-        // ---------- game loop ----------
-        function gameLoop() {
-            updateCars();
-            checkCollisionAfterMove();  // frog may be hit
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // ---------- keyboard ----------
-        function handleKey(e) {
-            const key = e.key;
-            if (key.startsWith('Arrow')) e.preventDefault();
-            if (key === 'ArrowUp') moveFrog('up');
-            else if (key === 'ArrowDown') moveFrog('down');
-            else if (key === 'ArrowLeft') moveFrog('left');
-            else if (key === 'ArrowRight') moveFrog('right');
-        }
-
-        // ---------- touch swipe (simple) ----------
-        let touchStartX = 0, touchStartY = 0;
-        let touchMoved = false;
-
-        function handleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-            touchMoved = false;
-        }
-
-        function handleTouchMove(e) {
-            e.preventDefault();
-            if (touchMoved) return;
-            if (e.touches.length === 0) return;
-            const touch = e.touches[0];
-            const dx = touch.clientX - touchStartX;
-            const dy = touch.clientY - touchStartY;
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-
-            if (Math.max(absDx, absDy) < 18) return;
-
-            touchMoved = true;
-            if (absDx > absDy) {
-                if (dx > 0) moveFrog('right');
-                else moveFrog('left');
-            } else {
-                if (dy > 0) moveFrog('down');
-                else moveFrog('up');
-            }
-        }
-
-        function handleTouchEnd(e) {
-            e.preventDefault();
-            touchMoved = false;
-        }
-
-        // ---------- restart button ----------
-        document.getElementById('restartButton').addEventListener('click', () => {
-            resetGame();
-            draw();
-        });
-
-        // ---------- attach listeners ----------
-        window.addEventListener('keydown', handleKey);
-        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-        canvas.addEventListener('touchend', handleTouchEnd);
-        canvas.addEventListener('touchcancel', handleTouchEnd);
-
-        // ---------- init ----------
-        resetGame();
-        draw();
-        gameLoop();
-    })();
+  function resetCars() {
+    cars = [];
+    [2, 3, 4, 5, 6].forEach(row => {
+      const count = row % 2 === 0 ? 3 : 2;
+      const dir = row % 2 === 0 ? 1 : -1;
+      for (let i = 0; i < count; i++) {
+        cars.push({ fCol: (i * 3 + row * 2) % COLS, row, dir,
+          emoji: carEmojis[Math.floor(Math.random() * carEmojis.length)],
+          speed: 0.008 + Math.random() * 0.010 });
+      }
+    });
+  }
+  function updateScore() { scoreDisplay.textContent = score; }
+  function resetGame() { cat = { col: 3, row: 0 }; score = 0; updateScore(); resetCars(); }
+  function checkCollision() {
+    return cars.some(car => car.row === cat.row && ((Math.round(car.fCol) % COLS) + COLS) % COLS === cat.col);
+  }
+  function moveCat(direction) {
+    let col = cat.col, row = cat.row;
+    if (direction === 'up') row = Math.min(row + 1, ROWS - 1);
+    if (direction === 'down') row = Math.max(row - 1, 0);
+    if (direction === 'left') col = Math.max(col - 1, 0);
+    if (direction === 'right') col = Math.min(col + 1, COLS - 1);
+    if (col === cat.col && row === cat.row) return;
+    const old = { ...cat };
+    cat = { col, row };
+    if (checkCollision()) { cat = old; return; }
+    if (cat.row === ROWS - 1) { score++; updateScore(); cat = { col: 3, row: 0 }; resetCars(); }
+  }
+  function updateCars() {
+    for (const car of cars) {
+      car.fCol += car.dir * car.speed;
+      if (car.fCol > COLS + 0.5) car.fCol = -1;
+      else if (car.fCol < -1) car.fCol = COLS + 0.5;
+      const carCol = ((Math.round(car.fCol) % COLS) + COLS) % COLS;
+      if (car.row === cat.row && carCol === cat.col) { cat = { col: 3, row: 0 }; resetCars(); break; }
+    }
+  }
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let row = 0; row < ROWS; row++) {
+      const y = canvas.height - (row + 1) * CELL_H;
+      ctx.fillStyle = row === 0 ? '#4caf50' : row === 1 || row === 7 ? '#388e3c' : row >= 2 && row <= 6 ? '#2c3e50' : '#b8860b';
+      ctx.fillRect(0, y, canvas.width, CELL_H);
+      if (row >= 2 && row <= 6) {
+        ctx.fillStyle = '#f1c40f';
+        for (let col = 0; col < COLS; col++) ctx.fillRect(col * CELL_W + CELL_W * .25, y + CELL_H * .5 - 2, CELL_W * .5, 4);
+      }
+      ctx.strokeStyle = '#00000022'; ctx.lineWidth = 1;
+      for (let col = 0; col <= COLS; col++) { ctx.beginPath(); ctx.moveTo(col * CELL_W, y); ctx.lineTo(col * CELL_W, y + CELL_H); ctx.stroke(); }
+    }
+    const goalY = canvas.height - 9 * CELL_H;
+    for (let col = 0; col < COLS; col++) {
+      ctx.fillStyle = col % 2 === 0 ? '#f5e6b0' : '#d4af37';
+      ctx.fillRect(col * CELL_W, goalY, CELL_W, CELL_H);
+      ctx.font = `${CELL_H * .5}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffffdd';
+      ctx.fillText('🏁', col * CELL_W + CELL_W / 2, goalY + CELL_H / 2);
+    }
+    for (const car of cars) {
+      let displayCol = car.fCol;
+      if (displayCol > COLS) displayCol -= COLS;
+      if (displayCol < -.5) displayCol += COLS;
+      const x = displayCol * CELL_W + CELL_W / 2;
+      const y = canvas.height - (car.row + 1) * CELL_H + CELL_H / 2;
+      ctx.shadowColor = '#00000080'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.font = `${CELL_H * .8}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(car.emoji, x, y);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    }
+    const x = cat.col * CELL_W + CELL_W / 2;
+    const y = canvas.height - (cat.row + 1) * CELL_H + CELL_H / 2;
+    ctx.shadowColor = '#b3ffb3'; ctx.shadowBlur = 16;
+    ctx.font = `${CELL_H * .9}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🐱', x, y);
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+  }
+  function gameLoop() { updateCars(); draw(); requestAnimationFrame(gameLoop); }
+  function handleKey(e) {
+    if (e.key.startsWith('Arrow')) e.preventDefault();
+    if (e.key === 'ArrowUp') moveCat('up');
+    else if (e.key === 'ArrowDown') moveCat('down');
+    else if (e.key === 'ArrowLeft') moveCat('left');
+    else if (e.key === 'ArrowRight') moveCat('right');
+  }
+  let touchStartX = 0, touchStartY = 0, touchMoved = false;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault(); touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; touchMoved = false;
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (touchMoved || !e.touches.length) return;
+    const dx = e.touches[0].clientX - touchStartX, dy = e.touches[0].clientY - touchStartY;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
+    touchMoved = true;
+    if (Math.abs(dx) > Math.abs(dy)) moveCat(dx > 0 ? 'right' : 'left');
+    else moveCat(dy > 0 ? 'down' : 'up');
+  }, { passive: false });
+  canvas.addEventListener('touchend', e => { e.preventDefault(); touchMoved = false; });
+  canvas.addEventListener('touchcancel', e => { e.preventDefault(); touchMoved = false; });
+  document.getElementById('restartButton').addEventListener('click', () => { resetGame(); draw(); });
+  window.addEventListener('keydown', handleKey);
+  resetGame(); draw(); gameLoop();
+})();
 </script>
 </body>
 </html>
